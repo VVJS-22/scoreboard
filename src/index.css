@@ -1,0 +1,641 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Football Scoreboard Design System */
+
+@layer base {
+  :root {
+    --background: 220 25% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 20% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 200 80% 60%;
+    --primary-foreground: 220 25% 8%;
+
+    --secondary: 340 70% 35%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 45 100% 50%;
+    --accent-foreground: 220 25% 8%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 200 80% 60%;
+
+    --radius: 0.75rem;
+
+    /* Team Colors */
+    --team-home: 200 70% 65%;
+    --team-away: 340 70% 30%;
+
+    /* Scoreboard specific */
+    --scoreboard-bg: 220 30% 6%;
+    --scoreboard-glass: 220 20% 15%;
+    --timer-glow: 200 100% 70%;
+    --score-glow: 45 100% 60%;
+
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 200 80% 60%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 15% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: 200 80% 60%;
+  }
+
+  .dark {
+    --background: 220 25% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 20% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 200 80% 60%;
+    --primary-foreground: 220 25% 8%;
+
+    --secondary: 340 70% 35%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 45 100% 50%;
+    --accent-foreground: 220 25% 8%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 200 80% 60%;
+
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 200 80% 60%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 15% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: 200 80% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Roboto', sans-serif;
+  }
+}
+
+@layer components {
+  .scoreboard {
+    @apply h-screen w-full flex items-center justify-center;
+    background: linear-gradient(
+      180deg,
+      hsl(var(--scoreboard-bg)) 0%,
+      hsl(220 35% 4%) 100%
+    );
+    background-image: 
+      radial-gradient(ellipse at 50% 0%, hsla(200, 80%, 40%, 0.15) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(var(--scoreboard-bg)) 0%, hsl(220 35% 4%) 100%);
+  }
+
+  .scoreboard-inner {
+    @apply relative w-full h-screen flex flex-col justify-center overflow-hidden uppercase;
+    background: linear-gradient(
+      180deg,
+      hsla(220, 25%, 12%, 0.95) 0%,
+      hsla(220, 30%, 8%, 0.98) 100%
+    );
+    backdrop-filter: blur(20px);
+  }
+
+  .stadium-header {
+    @apply text-center py-3 px-8;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsla(200, 60%, 50%, 0.1) 50%,
+      transparent 100%
+    );
+    border-bottom: 1px solid hsla(200, 60%, 50%, 0.15);
+  }
+
+  .stadium-name {
+    @apply text-2xl font-medium tracking-[0.3em] uppercase;
+    color: hsl(var(--muted-foreground));
+    font-family: 'Oswald', sans-serif;
+  }
+
+  .timer-section {
+    @apply flex items-center justify-between px-16 py-6;
+  }
+
+  .team-badge {
+    @apply flex-shrink-0;
+  }
+
+  .home-badge {
+    margin-left: 30px;
+  }
+
+  .away-badge {
+    margin-right: 30px;
+  }
+
+  .badge-circle {
+    @apply w-48 h-48 rounded-full flex items-center justify-center;
+    border: 4px solid;
+    box-shadow: 0 0 40px -5px;
+    transition: all 0.3s ease;
+  }
+
+  .home-circle {
+    border-color: hsl(var(--team-home));
+    box-shadow: 0 0 30px -5px hsla(var(--team-home) / 0.5);
+    background: radial-gradient(circle at center, hsla(var(--team-home) / 0.2), transparent 70%);
+  }
+
+  .away-circle {
+    border-color: hsl(var(--team-away));
+    box-shadow: 0 0 30px -5px hsla(var(--team-away) / 0.5);
+    background: radial-gradient(circle at center, hsla(var(--team-away) / 0.2), transparent 70%);
+  }
+
+  .badge-icon {
+    @apply text-8xl;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+  }
+
+  .timer-display {
+    @apply flex flex-col items-center;
+  }
+
+  .match-time {
+    @apply text-9xl font-bold;
+    font-family: 'Oswald', sans-serif;
+    color: hsl(var(--foreground));
+  }
+
+  .match-date {
+    @apply text-xl mt-3;
+    color: hsl(var(--muted-foreground));
+    font-family: 'Roboto', sans-serif;
+  }
+
+  .added-time {
+    @apply text-5xl ml-3;
+    color: hsl(var(--accent));
+    font-family: 'Oswald', sans-serif;
+  }
+
+  .added-time-notification {
+    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+    @apply flex flex-col items-center justify-center;
+    @apply bg-gradient-to-br from-amber-500/95 to-orange-600/95;
+    @apply rounded-2xl px-12 py-8 shadow-2xl;
+    border: 3px solid hsl(var(--accent));
+    animation: added-time-pop 0.5s ease-out, added-time-fade 3s ease-in-out;
+    z-index: 1000;
+  }
+
+  .added-time-text {
+    @apply text-8xl font-bold;
+    font-family: 'Oswald', sans-serif;
+    color: white;
+  }
+
+  .added-time-label {
+    @apply text-2xl font-bold tracking-wider mt-2;
+    font-family: 'Oswald', sans-serif;
+    color: white;
+  }
+
+  @keyframes added-time-pop {
+    0% {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes added-time-fade {
+    0%, 80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .score-section {
+    @apply flex items-center justify-center gap-8 px-8 py-12;
+    background: linear-gradient(
+      90deg,
+      hsla(var(--team-home) / 0.1) 0%,
+      transparent 30%,
+      transparent 70%,
+      hsla(var(--team-away) / 0.1) 100%
+    );
+  }
+
+  .team-events {
+    @apply flex flex-col gap-2 min-w-[200px] max-w-[300px];
+  }
+
+  .team-cards {
+    @apply flex flex-col gap-2 min-w-[180px] max-w-[250px];
+  }
+
+  .home-events {
+    @apply items-end text-right;
+  }
+
+  .home-cards {
+    @apply items-end text-right;
+  }
+
+  .away-events {
+    @apply items-start text-left;
+  }
+
+  .away-cards {
+    @apply items-start text-left;
+  }
+
+  .goal-event, .card-event {
+    @apply flex items-center gap-3 text-xl;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .home-events .goal-event {
+    @apply flex-row-reverse;
+  }
+
+  .player-name {
+    @apply font-medium text-lg capitalize;
+  }
+
+  .goal-minute {
+    @apply text-base opacity-70;
+  }
+
+  .goal-icon {
+    @apply text-xl;
+  }
+
+  .card-icon.red {
+    @apply text-2xl;
+  }
+
+  .score-display {
+    @apply flex items-center gap-12;
+  }
+
+  .score-with-name {
+    @apply flex flex-col items-center gap-2;
+  }
+
+  .team-short-name {
+    @apply text-2xl font-semibold tracking-wider opacity-70;
+    font-family: 'Oswald', sans-serif;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .score {
+    @apply text-9xl font-bold;
+    font-size: 13rem;
+    font-family: 'Oswald', sans-serif;
+    color: hsl(var(--foreground));
+  }
+
+  .league-badge {
+    @apply flex flex-col items-center gap-0.5;
+  }
+
+  .league-icon {
+    @apply w-16 h-16 rounded-full flex items-center justify-center mb-2;
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(45 80% 40%));
+    box-shadow: 0 0 20px hsla(var(--accent) / 0.4);
+  }
+
+  .league-icon span {
+    @apply text-3xl;
+  }
+
+  .league-text {
+    @apply text-lg font-bold tracking-wider uppercase leading-tight;
+    color: hsl(var(--muted-foreground));
+    font-family: 'Oswald', sans-serif;
+  }
+
+  .teams-section {
+    @apply flex justify-between px-16 py-4;
+    border-top: 1px solid hsla(0, 0%, 100%, 0.05);
+  }
+
+  .team-name {
+    @apply text-4xl font-bold tracking-wide;
+    font-family: 'Oswald', sans-serif;
+  }
+
+  .home-name {
+    color: hsl(var(--team-home));
+  }
+
+  .away-name {
+    color: hsl(var(--team-away));
+  }
+
+  .current-time-display {
+    @apply absolute bottom-4 right-6;
+  }
+
+  .current-time {
+    @apply text-2xl font-bold;
+    font-family: 'Oswald', sans-serif;
+    color: hsl(var(--primary));
+  }
+
+  .live-indicator {
+    @apply absolute top-4 right-4 flex items-center gap-2 px-3 py-1 rounded-full;
+    background: hsla(0, 72%, 51%, 0.2);
+    border: 1px solid hsla(0, 72%, 51%, 0.4);
+  }
+
+  .live-dot {
+    @apply w-2 h-2 rounded-full;
+    background: hsl(0, 72%, 51%);
+    animation: live-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes live-pulse {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 hsla(0, 72%, 51%, 0.7);
+    }
+    50% {
+      opacity: 0.7;
+      box-shadow: 0 0 0 6px hsla(0, 72%, 51%, 0);
+    }
+  }
+
+  .live-text {
+    @apply text-xs font-bold tracking-wider;
+    color: hsl(0, 72%, 60%);
+    font-family: 'Oswald', sans-serif;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .timer-section {
+      @apply px-2 py-4;
+    }
+
+    .home-badge {
+      margin-left: 5px;
+    }
+
+    .away-badge {
+      margin-right: 5px;
+    }
+
+    .badge-circle {
+      @apply w-20 h-20;
+      border: 2px solid;
+    }
+
+    .badge-icon {
+      @apply text-4xl;
+    }
+
+    .match-time {
+      @apply text-5xl;
+    }
+
+    .match-date {
+      @apply text-sm mt-1;
+    }
+
+    .added-time {
+      @apply text-2xl ml-2;
+    }
+
+    .score-section {
+      @apply flex-col gap-4 px-2 py-6;
+    }
+
+    .team-events, .team-cards {
+      @apply min-w-0 max-w-none w-full;
+    }
+
+    .goal-event, .card-event {
+      @apply text-sm gap-2;
+    }
+
+    .score-display {
+      @apply gap-6;
+    }
+
+    .score {
+      @apply text-5xl;
+      font-size: 5rem;
+    }
+
+    .team-short-name {
+      @apply text-lg;
+    }
+
+    .league-icon {
+      @apply w-10 h-10;
+    }
+
+    .league-icon span {
+      @apply text-xl;
+    }
+
+    .league-text {
+      @apply text-sm;
+    }
+
+    .teams-section {
+      @apply px-4 py-3;
+    }
+
+    .team-name {
+      @apply text-xl;
+    }
+
+    .stadium-name {
+      @apply text-lg;
+    }
+
+    .added-time-notification {
+      @apply px-6 py-4;
+    }
+
+    .added-time-text {
+      @apply text-4xl;
+    }
+
+    .added-time-label {
+      @apply text-base;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .badge-circle {
+      @apply w-16 h-16;
+    }
+
+    .badge-icon {
+      @apply text-3xl;
+    }
+
+    .match-time {
+      @apply text-4xl;
+    }
+
+    .score {
+      @apply text-4xl;
+      font-size: 4rem;
+    }
+
+    .team-short-name {
+      @apply text-base;
+    }
+
+    .team-name {
+      @apply text-lg;
+    }
+
+    .goal-event, .card-event {
+      @apply text-xs;
+    }
+  }
+
+  /* Mobile Landscape */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .stadium-header {
+      @apply py-1 px-4;
+    }
+
+    .stadium-name {
+      @apply text-sm;
+    }
+
+    .timer-section {
+      @apply py-2 px-4;
+    }
+
+    .badge-circle {
+      @apply w-12 h-12;
+      border: 2px solid;
+    }
+
+    .badge-icon {
+      @apply text-2xl;
+    }
+
+    .home-badge {
+      margin-left: 5px;
+    }
+
+    .away-badge {
+      margin-right: 5px;
+    }
+
+    .match-time {
+      @apply text-3xl;
+    }
+
+    .match-date {
+      @apply text-xs mt-0;
+    }
+
+    .added-time {
+      @apply text-xl ml-1;
+    }
+
+    .score-section {
+      @apply py-2 px-4 gap-4;
+    }
+
+    .team-events, .team-cards {
+      @apply gap-1;
+    }
+
+    .goal-event, .card-event {
+      @apply text-xs gap-1;
+    }
+
+    .score-display {
+      @apply gap-4;
+    }
+
+    .score {
+      @apply text-3xl;
+      font-size: 3rem;
+    }
+
+    .team-short-name {
+      @apply text-sm;
+    }
+
+    .league-icon {
+      @apply w-8 h-8 mb-0;
+    }
+
+    .league-icon span {
+      @apply text-lg;
+    }
+
+    .league-text {
+      @apply text-xs;
+    }
+
+    .teams-section {
+      @apply py-2 px-4;
+    }
+
+    .team-name {
+      @apply text-lg;
+    }
+
+    .player-name {
+      @apply text-xs;
+    }
+
+    .goal-minute {
+      @apply text-xs;
+    }
+  }
+}
