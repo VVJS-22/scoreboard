@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useMatchState, type GradientStop } from "@/hooks/useMatchState";
+import { useMatchState, type GradientStop, presetThemes } from "@/hooks/useMatchState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, RotateCcw, Plus, Trash2, Palette, Smile, Upload, X } from "lucide-react";
+import { Play, Pause, RotateCcw, Plus, Trash2, Palette, Smile, Upload, X, Save, Download } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { toast } from "sonner";
@@ -29,10 +29,16 @@ const Admin = () => {
     resetMatch,
     updateTheme,
     resetTheme,
+    savedThemes,
+    saveTheme,
+    loadTheme,
+    deleteTheme,
   } = useMatchState();
 
   const [showHomeEmojiPicker, setShowHomeEmojiPicker] = useState(false);
   const [showAwayEmojiPicker, setShowAwayEmojiPicker] = useState(false);
+  const [themeNameInput, setThemeNameInput] = useState("");
+  const [showSaveThemeDialog, setShowSaveThemeDialog] = useState(false);
 
   const homeEmojiPickerRef = useRef<HTMLDivElement>(null);
   const awayEmojiPickerRef = useRef<HTMLDivElement>(null);
@@ -155,6 +161,29 @@ const Admin = () => {
   const handleRemoveAwayGoal = (index: number) => handleRemoveGoal('away', index);
   const handleRemoveHomeCard = (index: number) => handleRemoveCard('home', index);
   const handleRemoveAwayCard = (index: number) => handleRemoveCard('away', index);
+
+  // Theme save handlers
+  const handleSaveTheme = () => {
+    if (!themeNameInput.trim()) {
+      toast.error('Please enter a theme name');
+      return;
+    }
+    
+    saveTheme(themeNameInput.trim());
+    setThemeNameInput("");
+    setShowSaveThemeDialog(false);
+    toast.success(`Theme "${themeNameInput.trim()}" saved successfully!`);
+  };
+
+  const handleLoadTheme = (themeId: string, themeName: string) => {
+    loadTheme(themeId);
+    toast.success(`Theme "${themeName}" applied!`);
+  };
+
+  const handleDeleteTheme = (themeId: string, themeName: string) => {
+    deleteTheme(themeId);
+    toast.success(`Theme "${themeName}" deleted!`);
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -795,6 +824,151 @@ const Admin = () => {
 
           {/* Theme Settings Tab */}
           <TabsContent value="theme" className="space-y-6">
+            {/* Saved Themes Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Saved Themes</span>
+                  <Button 
+                    onClick={() => setShowSaveThemeDialog(!showSaveThemeDialog)} 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Current Theme
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Save Theme Dialog */}
+                {showSaveThemeDialog && (
+                  <div className="p-4 border rounded-lg bg-secondary/20 space-y-3">
+                    <label className="text-sm font-medium">Theme Name</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        placeholder="e.g., My Custom Theme"
+                        value={themeNameInput}
+                        onChange={(e) => setThemeNameInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveTheme();
+                          if (e.key === 'Escape') setShowSaveThemeDialog(false);
+                        }}
+                        autoFocus
+                      />
+                      <Button onClick={handleSaveTheme} size="sm">
+                        Save
+                      </Button>
+                      <Button onClick={() => {
+                        setShowSaveThemeDialog(false);
+                        setThemeNameInput("");
+                      }} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset Themes */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold">Preset Themes</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {presetThemes.map((theme) => (
+                      <div 
+                        key={theme.id}
+                        className="border rounded-lg p-3 hover:border-primary transition-colors cursor-pointer"
+                        onClick={() => handleLoadTheme(theme.id, theme.name)}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">{theme.name}</span>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLoadTheme(theme.id, theme.name);
+                            }}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div 
+                          className="h-12 rounded border"
+                          style={{
+                            background: theme.theme.backgroundType === 'solid' 
+                              ? theme.theme.backgroundColor
+                              : `linear-gradient(${theme.theme.backgroundGradientAngle}deg, ${
+                                  (theme.theme.gradientStops || [
+                                    { color: theme.theme.backgroundGradientStart, percentage: 0 },
+                                    { color: theme.theme.backgroundGradientEnd, percentage: 100 }
+                                  ]).map(stop => `${stop.color} ${stop.percentage}%`).join(', ')
+                                })`
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* User Saved Themes */}
+                {savedThemes.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold">Your Saved Themes</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {savedThemes.map((theme) => (
+                        <div 
+                          key={theme.id}
+                          className="border rounded-lg p-3 hover:border-primary transition-colors cursor-pointer"
+                          onClick={() => handleLoadTheme(theme.id, theme.name)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium">{theme.name}</span>
+                            <div className="flex gap-1">
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLoadTheme(theme.id, theme.name);
+                                }}
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTheme(theme.id, theme.name);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div 
+                            className="h-12 rounded border"
+                            style={{
+                              background: theme.theme.backgroundType === 'solid' 
+                                ? theme.theme.backgroundColor
+                                : `linear-gradient(${theme.theme.backgroundGradientAngle}deg, ${
+                                    (theme.theme.gradientStops || [
+                                      { color: theme.theme.backgroundGradientStart, percentage: 0 },
+                                      { color: theme.theme.backgroundGradientEnd, percentage: 100 }
+                                    ]).map(stop => `${stop.color} ${stop.percentage}%`).join(', ')
+                                  })`
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
