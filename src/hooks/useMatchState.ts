@@ -54,6 +54,7 @@ export interface MatchState {
   league: string;
   matchDate: string;
   theme: ThemeSettings;
+  customLogos?: string[]; // Shared array of data URLs for custom uploaded logos
 }
 
 const STORAGE_KEY = "match-state";
@@ -79,6 +80,7 @@ const defaultMatchState: MatchState = {
   stadium: "Maracanã Stadium",
   league: "FIFA WORLD CUP",
   matchDate: "17.11.2021 - 10:30",
+  customLogos: [],
   theme: {
     backgroundColor: "#0f1729",
     backgroundType: "linear",

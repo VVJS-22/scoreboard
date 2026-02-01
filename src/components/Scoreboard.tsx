@@ -95,12 +95,20 @@ const Scoreboard = () => {
           <div className="team-badge home-badge">
             <div 
               className="badge-circle home-circle"
-              style={{ 
-                background: theme.homeBadgeBackground,
-                borderColor: theme.homeTeamColor 
+              style={{
+                overflow: 'hidden'
               }}
             >
-              <span className="badge-icon">{matchState.homeTeam.logo}</span>
+              {matchState.homeTeam.logo?.startsWith('data:image') ? (
+                <img 
+                  src={matchState.homeTeam.logo} 
+                  alt="Home team logo" 
+                  className="badge-icon-img"
+                  style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+                />
+              ) : (
+                <span className="badge-icon">{matchState.homeTeam.logo}</span>
+              )}
             </div>
           </div>
 
@@ -135,12 +143,20 @@ const Scoreboard = () => {
           <div className="team-badge away-badge">
             <div 
               className="badge-circle away-circle"
-              style={{ 
-                background: theme.awayBadgeBackground,
-                borderColor: theme.awayTeamColor 
+              style={{
+                overflow: 'hidden'
               }}
             >
-              <span className="badge-icon">{matchState.awayTeam.logo}</span>
+              {matchState.awayTeam.logo?.startsWith('data:image') ? (
+                <img 
+                  src={matchState.awayTeam.logo} 
+                  alt="Away team logo" 
+                  className="badge-icon-img"
+                  style={{ width: '80%', height: '80%', objectFit: 'contain' }}
+                />
+              ) : (
+                <span className="badge-icon">{matchState.awayTeam.logo}</span>
+              )}
             </div>
           </div>
         </div>

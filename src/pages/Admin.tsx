@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, RotateCcw, Plus, Trash2, Palette, Smile } from "lucide-react";
+import { Play, Pause, RotateCcw, Plus, Trash2, Palette, Smile, Upload, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
+import { toast } from "sonner";
 
 const Admin = () => {
   const {
@@ -35,6 +36,47 @@ const Admin = () => {
 
   const homeEmojiPickerRef = useRef<HTMLDivElement>(null);
   const awayEmojiPickerRef = useRef<HTMLDivElement>(null);
+  const homeFileInputRef = useRef<HTMLInputElement>(null);
+  const awayFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle image upload and convert to data URL
+  const handleImageUpload = (file: File, team: 'home' | 'away') => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Check file size (limit to 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size should be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const updateTeam = team === 'home' ? updateHomeTeam : updateAwayTeam;
+      const currentCustomLogos = matchState.customLogos || [];
+      
+      // Add new logo to shared array and keep last 10
+      const updatedLogos = [dataUrl, ...currentCustomLogos].slice(0, 10);
+      updateMatchState({ customLogos: updatedLogos });
+      updateTeam({ logo: dataUrl });
+      
+      toast.success('Logo uploaded successfully!');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to upload image');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove custom logo
+  const removeCustomLogo = (index: number) => {
+    const currentCustomLogos = matchState.customLogos || [];
+    const updatedLogos = currentCustomLogos.filter((_, i) => i !== index);
+    updateMatchState({ customLogos: updatedLogos });
+  };
 
   // Close emoji pickers when clicking outside
   useEffect(() => {
@@ -306,34 +348,91 @@ const Admin = () => {
 
               {/* Logo Edit */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Logo (emoji)</label>
+                <label className="text-sm text-muted-foreground">Logo (emoji or image)</label>
                 <div className="flex gap-2 items-center">
-                  <div className="w-20 h-20 border rounded-lg flex items-center justify-center text-5xl bg-secondary/50">
-                    {matchState.homeTeam.logo || "⚽"}
+                  <div className="w-20 h-20 flex items-center justify-center text-5xl overflow-hidden">
+                    {matchState.homeTeam.logo?.startsWith('data:image') ? (
+                      <img src={matchState.homeTeam.logo} alt="Home team logo" className="w-full h-full object-contain" />
+                    ) : (
+                      matchState.homeTeam.logo || "⚽"
+                    )}
                   </div>
-                  <div className="relative flex-1">
+                  <div className="flex-1 space-y-2">
+                    <div className="relative">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowHomeEmojiPicker(!showHomeEmojiPicker)}
+                        className="w-full h-12 text-lg"
+                      >
+                        <Smile className="mr-2 h-5 w-5" />
+                        Choose Emoji
+                      </Button>
+                      {showHomeEmojiPicker && (
+                        <div ref={homeEmojiPickerRef} className="absolute z-50 top-full mt-2 bg-background border rounded-lg shadow-lg">
+                          {/* Custom Logos Section */}
+                          {matchState.customLogos && matchState.customLogos.length > 0 && (
+                            <div className="p-3 border-b bg-secondary/20">
+                              <div className="text-xs text-muted-foreground mb-2 font-semibold">YOUR UPLOADED LOGOS</div>
+                              <div className="grid grid-cols-6 gap-2">
+                                {matchState.customLogos.map((logoUrl, idx) => (
+                                  <div key={idx} className="relative group">
+                                    <button
+                                      onClick={() => {
+                                        updateHomeTeam({ logo: logoUrl });
+                                        setShowHomeEmojiPicker(false);
+                                      }}
+                                      className="w-12 h-12 border rounded-lg overflow-hidden bg-background hover:border-primary transition-colors"
+                                    >
+                                      <img src={logoUrl} alt={`Custom logo ${idx + 1}`} className="w-full h-full object-contain" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeCustomLogo(idx);
+                                      }}
+                                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <EmojiPicker
+                            onEmojiClick={(emojiData: EmojiClickData) => {
+                              updateHomeTeam({ logo: emojiData.emoji });
+                              setShowHomeEmojiPicker(false);
+                            }}
+                            searchPlaceHolder="Search emoji..."
+                            width={350}
+                            height={400}
+                            theme={Theme.DARK}
+                          />
+                        </div>
+                      )}
+                    </div>
                     <Button
                       variant="outline"
-                      onClick={() => setShowHomeEmojiPicker(!showHomeEmojiPicker)}
-                      className="w-full h-20 text-lg"
+                      onClick={() => homeFileInputRef.current?.click()}
+                      className="w-full h-12 text-lg"
                     >
-                      <Smile className="mr-2 h-5 w-5" />
-                      Choose Emoji
+                      <Upload className="mr-2 h-5 w-5" />
+                      Upload Logo
                     </Button>
-                    {showHomeEmojiPicker && (
-                      <div ref={homeEmojiPickerRef} className="absolute z-50 top-full mt-2">
-                        <EmojiPicker
-                          onEmojiClick={(emojiData: EmojiClickData) => {
-                            updateHomeTeam({ logo: emojiData.emoji });
-                            setShowHomeEmojiPicker(false);
-                          }}
-                          searchPlaceHolder="Search emoji..."
-                          width={350}
-                          height={400}
-                          theme={Theme.DARK}
-                        />
-                      </div>
-                    )}
+                    <input
+                      ref={homeFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleImageUpload(file, 'home');
+                        }
+                        e.target.value = ''; // Reset input
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -469,34 +568,91 @@ const Admin = () => {
 
               {/* Logo Edit */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Logo (emoji)</label>
+                <label className="text-sm text-muted-foreground">Logo (emoji or image)</label>
                 <div className="flex gap-2 items-center">
-                  <div className="w-20 h-20 border rounded-lg flex items-center justify-center text-5xl bg-secondary/50">
-                    {matchState.awayTeam.logo || "🦁"}
+                  <div className="w-20 h-20 flex items-center justify-center text-5xl overflow-hidden">
+                    {matchState.awayTeam.logo?.startsWith('data:image') ? (
+                      <img src={matchState.awayTeam.logo} alt="Away team logo" className="w-full h-full object-contain" />
+                    ) : (
+                      matchState.awayTeam.logo || "🦁"
+                    )}
                   </div>
-                  <div className="relative flex-1">
+                  <div className="flex-1 space-y-2">
+                    <div className="relative">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAwayEmojiPicker(!showAwayEmojiPicker)}
+                        className="w-full h-12 text-lg"
+                      >
+                        <Smile className="mr-2 h-5 w-5" />
+                        Choose Emoji
+                      </Button>
+                      {showAwayEmojiPicker && (
+                        <div ref={awayEmojiPickerRef} className="absolute z-50 top-full mt-2 bg-background border rounded-lg shadow-lg">
+                          {/* Custom Logos Section */}
+                          {matchState.customLogos && matchState.customLogos.length > 0 && (
+                            <div className="p-3 border-b bg-secondary/20">
+                              <div className="text-xs text-muted-foreground mb-2 font-semibold">YOUR UPLOADED LOGOS</div>
+                              <div className="grid grid-cols-6 gap-2">
+                                {matchState.customLogos.map((logoUrl, idx) => (
+                                  <div key={idx} className="relative group">
+                                    <button
+                                      onClick={() => {
+                                        updateAwayTeam({ logo: logoUrl });
+                                        setShowAwayEmojiPicker(false);
+                                      }}
+                                      className="w-12 h-12 border rounded-lg overflow-hidden bg-background hover:border-primary transition-colors"
+                                    >
+                                      <img src={logoUrl} alt={`Custom logo ${idx + 1}`} className="w-full h-full object-contain" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeCustomLogo(idx);
+                                      }}
+                                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <EmojiPicker
+                            onEmojiClick={(emojiData: EmojiClickData) => {
+                              updateAwayTeam({ logo: emojiData.emoji });
+                              setShowAwayEmojiPicker(false);
+                            }}
+                            searchPlaceHolder="Search emoji..."
+                            width={350}
+                            height={400}
+                            theme={Theme.DARK}
+                          />
+                        </div>
+                      )}
+                    </div>
                     <Button
                       variant="outline"
-                      onClick={() => setShowAwayEmojiPicker(!showAwayEmojiPicker)}
-                      className="w-full h-20 text-lg"
+                      onClick={() => awayFileInputRef.current?.click()}
+                      className="w-full h-12 text-lg"
                     >
-                      <Smile className="mr-2 h-5 w-5" />
-                      Choose Emoji
+                      <Upload className="mr-2 h-5 w-5" />
+                      Upload Logo
                     </Button>
-                    {showAwayEmojiPicker && (
-                      <div ref={awayEmojiPickerRef} className="absolute z-50 top-full mt-2">
-                        <EmojiPicker
-                          onEmojiClick={(emojiData: EmojiClickData) => {
-                            updateAwayTeam({ logo: emojiData.emoji });
-                            setShowAwayEmojiPicker(false);
-                          }}
-                          searchPlaceHolder="Search emoji..."
-                          width={350}
-                          height={400}
-                          theme={Theme.DARK}
-                        />
-                      </div>
-                    )}
+                    <input
+                      ref={awayFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleImageUpload(file, 'away');
+                        }
+                        e.target.value = ''; // Reset input
+                      }}
+                    />
                   </div>
                 </div>
               </div>
