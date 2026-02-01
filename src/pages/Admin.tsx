@@ -881,16 +881,6 @@ const Admin = () => {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium">{theme.name}</span>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLoadTheme(theme.id, theme.name);
-                            }}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
                         </div>
                         <div 
                           className="h-12 rounded border"
@@ -925,28 +915,16 @@ const Admin = () => {
                         >
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium">{theme.name}</span>
-                            <div className="flex gap-1">
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleLoadTheme(theme.id, theme.name);
-                                }}
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteTheme(theme.id, theme.name);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTheme(theme.id, theme.name);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                           <div 
                             className="h-12 rounded border"
