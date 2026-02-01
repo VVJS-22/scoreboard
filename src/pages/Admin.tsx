@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMatchState, type GradientStop } from "@/hooks/useMatchState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Pause, RotateCcw, Plus, Trash2, Palette, Smile } from "lucide-react";
 import { Link } from "react-router-dom";
-import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 
 const Admin = () => {
   const {
@@ -33,6 +33,26 @@ const Admin = () => {
   const [showHomeEmojiPicker, setShowHomeEmojiPicker] = useState(false);
   const [showAwayEmojiPicker, setShowAwayEmojiPicker] = useState(false);
 
+  const homeEmojiPickerRef = useRef<HTMLDivElement>(null);
+  const awayEmojiPickerRef = useRef<HTMLDivElement>(null);
+
+  // Close emoji pickers when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (homeEmojiPickerRef.current && !homeEmojiPickerRef.current.contains(event.target as Node)) {
+        setShowHomeEmojiPicker(false);
+      }
+      if (awayEmojiPickerRef.current && !awayEmojiPickerRef.current.contains(event.target as Node)) {
+        setShowAwayEmojiPicker(false);
+      }
+    };
+
+    if (showHomeEmojiPicker || showAwayEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showHomeEmojiPicker, showAwayEmojiPicker]);
+
   const [homeGoalPlayer, setHomeGoalPlayer] = useState("");
   const [awayGoalPlayer, setAwayGoalPlayer] = useState("");
   const [homeCardPlayer, setHomeCardPlayer] = useState("");
@@ -57,59 +77,42 @@ const Admin = () => {
     }
   };
 
-  const handleAddHomeYellowCard = () => {
-    if (homeCardPlayer.trim()) {
-      addHomeCard(homeCardPlayer.trim(), "yellow");
-      setHomeCardPlayer("");
+  // Unified card handler
+  const handleAddCard = (team: 'home' | 'away', cardType: 'yellow' | 'red') => {
+    const player = team === 'home' ? homeCardPlayer : awayCardPlayer;
+    const setPlayer = team === 'home' ? setHomeCardPlayer : setAwayCardPlayer;
+    const addCard = team === 'home' ? addHomeCard : addAwayCard;
+    
+    if (player.trim()) {
+      addCard(player.trim(), cardType);
+      setPlayer("");
     }
   };
 
-  const handleAddHomeRedCard = () => {
-    if (homeCardPlayer.trim()) {
-      addHomeCard(homeCardPlayer.trim(), "red");
-      setHomeCardPlayer("");
-    }
+  const handleAddHomeYellowCard = () => handleAddCard('home', 'yellow');
+  const handleAddHomeRedCard = () => handleAddCard('home', 'red');
+  const handleAddAwayYellowCard = () => handleAddCard('away', 'yellow');
+  const handleAddAwayRedCard = () => handleAddCard('away', 'red');
+
+  // Unified remove handlers
+  const handleRemoveGoal = (team: 'home' | 'away', index: number) => {
+    const updateTeam = team === 'home' ? updateHomeTeam : updateAwayTeam;
+    const goals = team === 'home' ? matchState.homeTeam.goals : matchState.awayTeam.goals;
+    const newGoals = goals.filter((_, i) => i !== index);
+    updateTeam({ goals: newGoals, score: newGoals.length });
   };
 
-  const handleAddAwayYellowCard = () => {
-    if (awayCardPlayer.trim()) {
-      addAwayCard(awayCardPlayer.trim(), "yellow");
-      setAwayCardPlayer("");
-    }
+  const handleRemoveCard = (team: 'home' | 'away', index: number) => {
+    const updateTeam = team === 'home' ? updateHomeTeam : updateAwayTeam;
+    const cards = team === 'home' ? matchState.homeTeam.cards : matchState.awayTeam.cards;
+    const newCards = cards.filter((_, i) => i !== index);
+    updateTeam({ cards: newCards });
   };
 
-  const handleAddAwayRedCard = () => {
-    if (awayCardPlayer.trim()) {
-      addAwayCard(awayCardPlayer.trim(), "red");
-      setAwayCardPlayer("");
-    }
-  };
-
-  const handleRemoveHomeGoal = (index: number) => {
-    const newGoals = matchState.homeTeam.goals.filter((_, i) => i !== index);
-    updateHomeTeam({ 
-      goals: newGoals,
-      score: newGoals.length
-    });
-  };
-
-  const handleRemoveAwayGoal = (index: number) => {
-    const newGoals = matchState.awayTeam.goals.filter((_, i) => i !== index);
-    updateAwayTeam({ 
-      goals: newGoals,
-      score: newGoals.length
-    });
-  };
-
-  const handleRemoveHomeCard = (index: number) => {
-    const newCards = matchState.homeTeam.cards.filter((_, i) => i !== index);
-    updateHomeTeam({ cards: newCards });
-  };
-
-  const handleRemoveAwayCard = (index: number) => {
-    const newCards = matchState.awayTeam.cards.filter((_, i) => i !== index);
-    updateAwayTeam({ cards: newCards });
-  };
+  const handleRemoveHomeGoal = (index: number) => handleRemoveGoal('home', index);
+  const handleRemoveAwayGoal = (index: number) => handleRemoveGoal('away', index);
+  const handleRemoveHomeCard = (index: number) => handleRemoveCard('home', index);
+  const handleRemoveAwayCard = (index: number) => handleRemoveCard('away', index);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -147,31 +150,8 @@ const Admin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-3 mb-4">
-              {timerState.isRunning ? (
-                <Button onClick={stopTimer} variant="destructive" size="lg">
-                  <Pause className="mr-2 h-5 w-5" />
-                  Stop
-                </Button>
-              ) : (
-                <Button onClick={startTimer} size="lg" className="bg-green-600 hover:bg-green-700">
-                  <Play className="mr-2 h-5 w-5" />
-                  Start
-                </Button>
-              )}
-              <Button onClick={resetTimer} variant="outline" size="lg">
-                <RotateCcw className="mr-2 h-5 w-5" />
-                Reset Timer
-              </Button>
-              <Button onClick={resetMatch} variant="destructive" size="lg">
-                <Trash2 className="mr-2 h-5 w-5" />
-                Reset Entire Match
-              </Button>
-            </div>
-            
             {/* Timer End Time Setting */}
-            <Separator className="my-4" />
-            <div className="space-y-2">
+            <div className="space-y-2 mb-4">
               <label className="text-sm text-muted-foreground">Auto-stop Timer At (minutes)</label>
               <div className="flex gap-2">
                 <Input
@@ -209,6 +189,30 @@ const Admin = () => {
               )}
             </div>
 
+            <Separator className="my-4" />
+
+            <div className="flex flex-wrap gap-3 mb-4">
+              {timerState.isRunning ? (
+                <Button onClick={stopTimer} variant="destructive" size="lg">
+                  <Pause className="mr-2 h-5 w-5" />
+                  Stop
+                </Button>
+              ) : (
+                <Button onClick={startTimer} size="lg" className="bg-green-600 hover:bg-green-700">
+                  <Play className="mr-2 h-5 w-5" />
+                  Start
+                </Button>
+              )}
+              <Button onClick={resetTimer} variant="outline" size="lg">
+                <RotateCcw className="mr-2 h-5 w-5" />
+                Reset Timer
+              </Button>
+              <Button onClick={resetMatch} variant="destructive" size="lg">
+                <Trash2 className="mr-2 h-5 w-5" />
+                Reset Entire Match
+              </Button>
+            </div>
+            
             {/* Added Time Controls */}
             {timerState.endMinutes !== null && (
               <>
@@ -317,7 +321,7 @@ const Admin = () => {
                       Choose Emoji
                     </Button>
                     {showHomeEmojiPicker && (
-                      <div className="absolute z-50 top-full mt-2">
+                      <div ref={homeEmojiPickerRef} className="absolute z-50 top-full mt-2">
                         <EmojiPicker
                           onEmojiClick={(emojiData: EmojiClickData) => {
                             updateHomeTeam({ logo: emojiData.emoji });
@@ -326,7 +330,7 @@ const Admin = () => {
                           searchPlaceHolder="Search emoji..."
                           width={350}
                           height={400}
-                          theme="dark"
+                          theme={Theme.DARK}
                         />
                       </div>
                     )}
@@ -480,7 +484,7 @@ const Admin = () => {
                       Choose Emoji
                     </Button>
                     {showAwayEmojiPicker && (
-                      <div className="absolute z-50 top-full mt-2">
+                      <div ref={awayEmojiPickerRef} className="absolute z-50 top-full mt-2">
                         <EmojiPicker
                           onEmojiClick={(emojiData: EmojiClickData) => {
                             updateAwayTeam({ logo: emojiData.emoji });
@@ -489,7 +493,7 @@ const Admin = () => {
                           searchPlaceHolder="Search emoji..."
                           width={350}
                           height={400}
-                          theme="dark"
+                          theme={Theme.DARK}
                         />
                       </div>
                     )}

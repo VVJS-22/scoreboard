@@ -53,9 +53,6 @@ export interface MatchState {
   stadium: string;
   league: string;
   matchDate: string;
-  timerMinutes: number;
-  timerSeconds: number;
-  isTimerRunning: boolean;
   theme: ThemeSettings;
 }
 
@@ -64,16 +61,16 @@ const TIMER_KEY = "match-timer";
 
 const defaultMatchState: MatchState = {
   homeTeam: {
-    name: "BRAZIL",
-    shortName: "BRA",
+    name: "ARGENTINA",
+    shortName: "ARG",
     logo: "🇦🇷",
     score: 0,
     goals: [],
     cards: [],
   },
   awayTeam: {
-    name: "ARGENTINA",
-    shortName: "ARG",
+    name: "BRAZIL",
+    shortName: "BRA",
     logo: "🇧🇷",
     score: 0,
     goals: [],
@@ -82,9 +79,6 @@ const defaultMatchState: MatchState = {
   stadium: "Maracanã Stadium",
   league: "FIFA WORLD CUP",
   matchDate: "17.11.2021 - 10:30",
-  timerMinutes: 0,
-  timerSeconds: 0,
-  isTimerRunning: false,
   theme: {
     backgroundColor: "#0f1729",
     backgroundType: "linear",
@@ -100,7 +94,7 @@ const defaultMatchState: MatchState = {
     timerColor: "#fafafa",
     scoreColor: "#fafafa",
     homeTeamColor: "#60a5fa",
-    awayTeamColor: "#b82c5d",
+    awayTeamColor: "#2db97c",
     homeBadgeBackground: "radial-gradient(circle at center, hsla(200, 70%, 65%, 0.2), transparent 70%)",
     awayBadgeBackground: "radial-gradient(circle at center, hsla(340, 70%, 30%, 0.2), transparent 70%)",
     leagueIconBackground: "#fbbf24",
@@ -147,23 +141,13 @@ export const useMatchState = () => {
   const [timerState, setTimerState] = useState(getStoredTimer);
   const hideAddedTimeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync timer to state
-  useEffect(() => {
-    setMatchState(prev => ({
-      ...prev,
-      timerMinutes: timerState.minutes,
-      timerSeconds: timerState.seconds,
-      isTimerRunning: timerState.isRunning,
-    }));
-  }, [timerState]);
-
   // Listen for storage events from other tabs (real-time sync)
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
           const newState = JSON.parse(e.newValue);
-          setMatchState(prev => ({ ...prev, ...newState }));
+          setMatchState(newState);
         } catch (err) {
           console.error("Failed to parse storage event:", err);
         }
@@ -179,7 +163,13 @@ export const useMatchState = () => {
     };
 
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      // Cleanup timeout on unmount
+      if (hideAddedTimeTimeoutRef.current) {
+        clearTimeout(hideAddedTimeTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Timer tick effect - global singleton pattern
@@ -206,7 +196,8 @@ export const useMatchState = () => {
         // Check if end time is reached (including added time)
         if (newTimer.endMinutes !== null) {
           const totalEndTime = newTimer.endMinutes + newTimer.addedTime;
-          if (newTimer.minutes >= totalEndTime) {
+          const currentTime = newTimer.minutes + (newTimer.seconds / 60);
+          if (currentTime >= totalEndTime) {
             newTimer = { ...newTimer, isRunning: false };
           }
         }
@@ -232,199 +223,168 @@ export const useMatchState = () => {
     };
   }, []);
 
-  const updateMatchState = useCallback((updates: Partial<MatchState>) => {
+  // Helper to update state and persist to localStorage
+  const persistMatchState = useCallback((updater: (prev: MatchState) => MatchState) => {
     setMatchState(prev => {
-      const newState = { ...prev, ...updates };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      // Dispatch custom event for same-tab updates
-      window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
+      const newState = updater(prev);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      } catch (err) {
+        console.error("Failed to save match state to localStorage:", err);
+      }
       return newState;
     });
   }, []);
+
+  const updateMatchState = useCallback((updates: Partial<MatchState>) => {
+    persistMatchState(prev => ({ ...prev, ...updates }));
+  }, [persistMatchState]);
 
   const updateHomeTeam = useCallback((updates: Partial<TeamData>) => {
-    setMatchState(prev => {
-      const newState = { ...prev, homeTeam: { ...prev.homeTeam, ...updates } };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-      return newState;
-    });
-  }, []);
+    persistMatchState(prev => ({ ...prev, homeTeam: { ...prev.homeTeam, ...updates } }));
+  }, [persistMatchState]);
 
   const updateAwayTeam = useCallback((updates: Partial<TeamData>) => {
-    setMatchState(prev => {
-      const newState = { ...prev, awayTeam: { ...prev.awayTeam, ...updates } };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-      return newState;
-    });
-  }, []);
+    persistMatchState(prev => ({ ...prev, awayTeam: { ...prev.awayTeam, ...updates } }));
+  }, [persistMatchState]);
 
-  const addHomeGoal = useCallback((player: string) => {
+  // Unified goal adding logic
+  const addGoal = useCallback((player: string, team: 'home' | 'away') => {
     setTimerState(currentTimer => {
-      setMatchState(prev => {
-        const newGoal: GoalEvent = { player, minute: currentTimer.minutes, second: currentTimer.seconds };
-        const newState = {
-          ...prev,
-          homeTeam: {
-            ...prev.homeTeam,
-            score: prev.homeTeam.score + 1,
-            goals: [...prev.homeTeam.goals, newGoal],
-          },
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-        return newState;
-      });
+      const newGoal: GoalEvent = { player, minute: currentTimer.minutes, second: currentTimer.seconds };
+      const teamKey = team === 'home' ? 'homeTeam' : 'awayTeam';
+      
+      persistMatchState(prev => ({
+        ...prev,
+        [teamKey]: {
+          ...prev[teamKey],
+          score: prev[teamKey].score + 1,
+          goals: [...prev[teamKey].goals, newGoal],
+        },
+      }));
       return currentTimer;
     });
-  }, []);
+  }, [persistMatchState]);
 
-  const addAwayGoal = useCallback((player: string) => {
+  const addHomeGoal = useCallback((player: string) => addGoal(player, 'home'), [addGoal]);
+  const addAwayGoal = useCallback((player: string) => addGoal(player, 'away'), [addGoal]);
+
+  // Unified card adding logic
+  const addCard = useCallback((player: string, type: "yellow" | "red", team: 'home' | 'away') => {
     setTimerState(currentTimer => {
-      setMatchState(prev => {
-        const newGoal: GoalEvent = { player, minute: currentTimer.minutes, second: currentTimer.seconds };
-        const newState = {
-          ...prev,
-          awayTeam: {
-            ...prev.awayTeam,
-            score: prev.awayTeam.score + 1,
-            goals: [...prev.awayTeam.goals, newGoal],
-          },
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-        return newState;
-      });
+      const newCard: CardEvent = { player, minute: currentTimer.minutes, second: currentTimer.seconds, type };
+      const teamKey = team === 'home' ? 'homeTeam' : 'awayTeam';
+      
+      persistMatchState(prev => ({
+        ...prev,
+        [teamKey]: {
+          ...prev[teamKey],
+          cards: [...prev[teamKey].cards, newCard],
+        },
+      }));
       return currentTimer;
     });
-  }, []);
+  }, [persistMatchState]);
 
-  const addHomeCard = useCallback((player: string, type: "yellow" | "red") => {
-    setTimerState(currentTimer => {
-      setMatchState(prev => {
-        const newCard: CardEvent = { player, minute: currentTimer.minutes, second: currentTimer.seconds, type };
-        const newState = {
-          ...prev,
-          homeTeam: {
-            ...prev.homeTeam,
-            cards: [...prev.homeTeam.cards, newCard],
-          },
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-        return newState;
-      });
-      return currentTimer;
-    });
-  }, []);
+  const addHomeCard = useCallback((player: string, type: "yellow" | "red") => addCard(player, type, 'home'), [addCard]);
+  const addAwayCard = useCallback((player: string, type: "yellow" | "red") => addCard(player, type, 'away'), [addCard]);
 
-  const addAwayCard = useCallback((player: string, type: "yellow" | "red") => {
-    setTimerState(currentTimer => {
-      setMatchState(prev => {
-        const newCard: CardEvent = { player, minute: currentTimer.minutes, second: currentTimer.seconds, type };
-        const newState = {
-          ...prev,
-          awayTeam: {
-            ...prev.awayTeam,
-            cards: [...prev.awayTeam.cards, newCard],
-          },
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-        window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-        return newState;
-      });
-      return currentTimer;
-    });
-  }, []);
-
-  const startTimer = useCallback(() => {
+  // Helper to update timer state and persist
+  const updateTimer = useCallback((updates: Partial<{ minutes: number; seconds: number; isRunning: boolean; endMinutes: number | null; addedTime: number; showAddedTime: boolean; lastUpdate: number }>) => {
     setTimerState(prev => {
-      const newTimer = { ...prev, isRunning: true, lastUpdate: Date.now() };
-      localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
+      const newTimer = { ...prev, ...updates, lastUpdate: Date.now() };
+      try {
+        localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
+      } catch (err) {
+        console.error("Failed to save timer state to localStorage:", err);
+      }
       return newTimer;
     });
   }, []);
 
-  const stopTimer = useCallback(() => {
-    setTimerState(prev => {
-      const newTimer = { ...prev, isRunning: false, lastUpdate: Date.now() };
-      localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
-      return newTimer;
-    });
-  }, []);
+  const startTimer = useCallback(() => updateTimer({ isRunning: true }), [updateTimer]);
+  const stopTimer = useCallback(() => updateTimer({ isRunning: false }), [updateTimer]);
 
   const resetTimer = useCallback(() => {
-    const newTimer = { minutes: 0, seconds: 0, isRunning: false, endMinutes: null, addedTime: 0, showAddedTime: false, lastUpdate: Date.now() };
-    setTimerState(newTimer);
-    localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
-  }, []);
+    updateTimer({ minutes: 0, seconds: 0, isRunning: false, endMinutes: null, addedTime: 0, showAddedTime: false });
+  }, [updateTimer]);
 
   const setTimerEndTime = useCallback((endMinutes: number | null) => {
-    setTimerState(prev => {
-      const newTimer = { ...prev, endMinutes, lastUpdate: Date.now() };
-      localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
-      return newTimer;
-    });
-  }, []);
+    updateTimer({ endMinutes });
+  }, [updateTimer]);
 
   const setAddedTime = useCallback((minutes: number) => {
-    // Clear any existing timeout
     if (hideAddedTimeTimeoutRef.current) {
       clearTimeout(hideAddedTimeTimeoutRef.current);
     }
 
     setTimerState(prev => {
-      // Auto-start timer when adding injury time if it was stopped
+      // If minutes is 0, clear. Otherwise, always accumulate with existing added time
+      const newAddedTime = minutes === 0 ? 0 : prev.addedTime + minutes;
+      
       const shouldStart = minutes > 0 && !prev.isRunning;
       const newTimer = { 
         ...prev, 
-        addedTime: minutes, 
+        addedTime: newAddedTime, 
         showAddedTime: minutes > 0, 
-        isRunning: shouldStart ? true : prev.isRunning,
+        isRunning: shouldStart || prev.isRunning,
         lastUpdate: Date.now() 
       };
-      localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
+      try {
+        localStorage.setItem(TIMER_KEY, JSON.stringify(newTimer));
+      } catch (err) {
+        console.error("Failed to save added time to localStorage:", err);
+      }
       return newTimer;
     });
     
-    // Hide the added time notification after 3 seconds
     if (minutes > 0) {
       hideAddedTimeTimeoutRef.current = setTimeout(() => {
-        setTimerState(current => {
-          const updated = { ...current, showAddedTime: false, lastUpdate: Date.now() };
-          localStorage.setItem(TIMER_KEY, JSON.stringify(updated));
-          return updated;
-        });
+        updateTimer({ showAddedTime: false });
       }, 3000);
     }
-  }, []);
+  }, [updateTimer]);
 
   const resetMatch = useCallback(() => {
-    setMatchState(defaultMatchState);
-    setTimerState({ minutes: 0, seconds: 0, isRunning: false, endMinutes: null, addedTime: 0, showAddedTime: false, lastUpdate: Date.now() });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultMatchState));
-    localStorage.setItem(TIMER_KEY, JSON.stringify({ minutes: 0, seconds: 0, isRunning: false, endMinutes: null, addedTime: 0, showAddedTime: false }));
-    window.dispatchEvent(new CustomEvent("match-state-update", { detail: defaultMatchState }));
-  }, []);
+    // Only reset timer, goals, scorer, and cards
+    // Preserve team names, logos, stadium, league, match date, and theme
+    persistMatchState(prev => ({
+      ...prev,
+      homeTeam: {
+        ...prev.homeTeam,
+        score: 0,
+        goals: [],
+        cards: [],
+      },
+      awayTeam: {
+        ...prev.awayTeam,
+        score: 0,
+        goals: [],
+        cards: [],
+      },
+    }));
+    
+    // Reset timer
+    const resetTimerData = { 
+      minutes: 0, 
+      seconds: 0, 
+      isRunning: false, 
+      endMinutes: null, 
+      addedTime: 0, 
+      showAddedTime: false, 
+      lastUpdate: Date.now() 
+    };
+    setTimerState(resetTimerData);
+    localStorage.setItem(TIMER_KEY, JSON.stringify(resetTimerData));
+  }, [persistMatchState]);
 
   const updateTheme = useCallback((updates: Partial<ThemeSettings>) => {
-    setMatchState(prev => {
-      const newState = { ...prev, theme: { ...prev.theme, ...updates } };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-      return newState;
-    });
-  }, []);
+    persistMatchState(prev => ({ ...prev, theme: { ...prev.theme, ...updates } }));
+  }, [persistMatchState]);
 
   const resetTheme = useCallback(() => {
-    setMatchState(prev => {
-      const newState = { ...prev, theme: defaultMatchState.theme };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      window.dispatchEvent(new CustomEvent("match-state-update", { detail: newState }));
-      return newState;
-    });
-  }, []);
+    persistMatchState(prev => ({ ...prev, theme: defaultMatchState.theme }));
+  }, [persistMatchState]);
 
   return {
     matchState,

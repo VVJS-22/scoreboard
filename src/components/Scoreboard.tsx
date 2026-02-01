@@ -1,12 +1,46 @@
 import { useMatchState } from "@/hooks/useMatchState";
 import { Link } from "react-router-dom";
+import { useRef, useState, useEffect } from "react";
+import { Maximize } from "lucide-react";
 
 const Scoreboard = () => {
   const { matchState, timerState } = useMatchState();
   const theme = matchState.theme;
+  const scoreboardRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Track fullscreen state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const formatTime = (mins: number, secs: number) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const toggleFullscreen = () => {
+    if (!scoreboardRef.current) return;
+
+    if (!document.fullscreenElement) {
+      scoreboardRef.current.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const enterFullscreen = () => {
+    if (!scoreboardRef.current || document.fullscreenElement) return;
+    
+    scoreboardRef.current.requestFullscreen().catch((err) => {
+      console.error(`Error attempting to enable fullscreen: ${err.message}`);
+    });
   };
 
   const getBackgroundStyle = () => {
@@ -30,7 +64,18 @@ const Scoreboard = () => {
   };
 
   return (
-    <div className="scoreboard">
+    <div className="scoreboard" ref={scoreboardRef} onDoubleClick={toggleFullscreen}>
+      {/* Fullscreen Button - Only visible when not in fullscreen */}
+      {!isFullscreen && (
+        <button
+          onClick={enterFullscreen}
+          className="fixed top-4 right-4 z-50 bg-black/30 hover:bg-black/50 text-white/70 hover:text-white p-3 rounded-lg backdrop-blur-sm transition-all duration-300 opacity-50 hover:opacity-100"
+          title="Enter Fullscreen"
+        >
+          <Maximize className="w-5 h-5" />
+        </button>
+      )}
+      
       <div 
         className="scoreboard-inner"
         style={getBackgroundStyle()}
@@ -65,8 +110,10 @@ const Scoreboard = () => {
               style={{ color: theme.timerColor }}
             >
               {formatTime(timerState.minutes, timerState.seconds)}
-              {timerState.addedTime > 0 && (
-                <span className="added-time">+{timerState.addedTime}</span>
+              {timerState.addedTime > 0 && 
+               timerState.endMinutes !== null && 
+               (timerState.isRunning || timerState.minutes < timerState.endMinutes + timerState.addedTime) && (
+                <span className="added-time">{timerState.endMinutes}+{timerState.addedTime}</span>
               )}
             </span>
             <span 
@@ -104,7 +151,7 @@ const Scoreboard = () => {
           <div className="team-cards home-cards">
             {matchState.homeTeam.cards.slice(-5).map((card, index) => (
               <div 
-                key={`card-${index}`} 
+                key={`home-card-${card.minute}-${card.second}-${card.player}-${index}`} 
                 className="card-event"
                 style={{ 
                   color: theme.goalCardTextColor 
@@ -122,7 +169,7 @@ const Scoreboard = () => {
           <div className="team-events home-events">
             {matchState.homeTeam.goals.slice(-5).map((goal, index) => (
               <div 
-                key={index} 
+                key={`home-goal-${goal.minute}-${goal.second}-${goal.player}-${index}`} 
                 className="goal-event"
                 style={{ 
                   color: theme.goalCardTextColor 
@@ -191,7 +238,7 @@ const Scoreboard = () => {
           <div className="team-events away-events">
             {matchState.awayTeam.goals.slice(-5).map((goal, index) => (
               <div 
-                key={index} 
+                key={`away-goal-${goal.minute}-${goal.second}-${goal.player}-${index}`} 
                 className="goal-event"
                 style={{ 
                   color: theme.goalCardTextColor 
@@ -208,7 +255,7 @@ const Scoreboard = () => {
           <div className="team-cards away-cards">
             {matchState.awayTeam.cards.slice(-5).map((card, index) => (
               <div 
-                key={`card-${index}`} 
+                key={`away-card-${card.minute}-${card.second}-${card.player}-${index}`} 
                 className="card-event"
                 style={{ 
                   color: theme.goalCardTextColor 
