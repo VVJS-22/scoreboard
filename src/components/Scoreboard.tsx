@@ -118,11 +118,6 @@ const Scoreboard = () => {
               style={{ color: theme.timerColor }}
             >
               {formatTime(timerState.minutes, timerState.seconds)}
-              {timerState.addedTime > 0 && 
-               timerState.endMinutes !== null && 
-               (timerState.isRunning || timerState.minutes < timerState.endMinutes + timerState.addedTime) && (
-                <span className="added-time">{timerState.endMinutes}+{timerState.addedTime}</span>
-              )}
             </span>
             <span 
               className="match-date"
@@ -163,41 +158,6 @@ const Scoreboard = () => {
 
         {/* Score Section */}
         <div className="score-section">
-          {/* Home Team Cards (Left side) */}
-          <div className="team-cards home-cards">
-            {matchState.homeTeam.cards.slice(-5).map((card, index) => (
-              <div 
-                key={`home-card-${card.minute}-${card.second}-${card.player}-${index}`} 
-                className="card-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className="player-name">{card.player}</span>
-                <span className={`card-icon ${card.type}`}>
-                  {card.type === "red" ? "🟥" : "🟨"}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Home Team Goals */}
-          <div className="team-events home-events">
-            {matchState.homeTeam.goals.slice(-5).map((goal, index) => (
-              <div 
-                key={`home-goal-${goal.minute}-${goal.second}-${goal.player}-${index}`} 
-                className="goal-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className="player-name">{goal.player}</span>
-                <span className="goal-minute">{goal.minute}:{goal.second?.toString().padStart(2, '0') || '00'}'</span>
-                <span className="goal-icon">⚽</span>
-              </div>
-            ))}
-          </div>
-
           {/* Score Display */}
           <div className="score-display">
             <div className="score-with-name">
@@ -221,18 +181,16 @@ const Scoreboard = () => {
               >
                 <span>⚽</span>
               </div>
-              <span 
-                className="league-text"
-                style={{ color: theme.secondaryTextColor }}
-              >
-                {matchState.league.split(" ")[0]}
-              </span>
-              <span 
-                className="league-text"
-                style={{ color: theme.secondaryTextColor }}
-              >
-                {matchState.league.split(" ").slice(1).join(" ")}
-              </span>
+              {timerState.addedTime > 0 && 
+               timerState.endMinutes !== null && 
+               (timerState.isRunning || timerState.minutes < timerState.endMinutes + timerState.addedTime) && (
+                <div className="added-time-container">
+                  <span className="added-time-inline">
+                    {timerState.endMinutes}+{timerState.addedTime}
+                  </span>
+                  <span className="added-time-label-inline">TOTAL TIME</span>
+                </div>
+              )}
             </div>
             <div className="score-with-name">
               <span 
@@ -249,56 +207,15 @@ const Scoreboard = () => {
               </span>
             </div>
           </div>
-
-          {/* Away Team Goals */}
-          <div className="team-events away-events">
-            {matchState.awayTeam.goals.slice(-5).map((goal, index) => (
-              <div 
-                key={`away-goal-${goal.minute}-${goal.second}-${goal.player}-${index}`} 
-                className="goal-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className="goal-icon">⚽</span>
-                <span className="goal-minute">{goal.minute}:{goal.second?.toString().padStart(2, '0') || '00'}'</span>
-                <span className="player-name">{goal.player}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Away Team Cards (Right side) */}
-          <div className="team-cards away-cards">
-            {matchState.awayTeam.cards.slice(-5).map((card, index) => (
-              <div 
-                key={`away-card-${card.minute}-${card.second}-${card.player}-${index}`} 
-                className="card-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className={`card-icon ${card.type}`}>
-                  {card.type === "red" ? "🟥" : "🟨"}
-                </span>
-                <span className="player-name">{card.player}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Team Names */}
+        {/* League Name */}
         <div className="teams-section">
           <span 
-            className="team-name home-name"
-            style={{ color: theme.homeTeamColor }}
+            className="league-name-bottom"
+            style={{ color: theme.secondaryTextColor }}
           >
-            {matchState.homeTeam.name}
-          </span>
-          <span 
-            className="team-name away-name"
-            style={{ color: theme.awayTeamColor }}
-          >
-            {matchState.awayTeam.name}
+            {matchState.league}
           </span>
         </div>
 

@@ -604,6 +604,7 @@ export const useMatchState = () => {
     startTimer,
     stopTimer,
     resetTimer,
+    updateTimer,
     setTimerEndTime,
     setAddedTime,
     resetMatch,

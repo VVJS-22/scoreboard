@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, RotateCcw, Plus, Trash2, Palette, Smile, Upload, X, Save, Download } from "lucide-react";
+import { Play, Pause, RotateCcw, Plus, Minus, Trash2, Palette, Upload, X, Save, Download } from "lucide-react";
 import { Link } from "react-router-dom";
-import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { toast } from "sonner";
 
 const Admin = () => {
@@ -19,11 +18,10 @@ const Admin = () => {
     updateAwayTeam,
     addHomeGoal,
     addAwayGoal,
-    addHomeCard,
-    addAwayCard,
     startTimer,
     stopTimer,
     resetTimer,
+    updateTimer,
     setTimerEndTime,
     setAddedTime,
     resetMatch,
@@ -35,13 +33,9 @@ const Admin = () => {
     deleteTheme,
   } = useMatchState();
 
-  const [showHomeEmojiPicker, setShowHomeEmojiPicker] = useState(false);
-  const [showAwayEmojiPicker, setShowAwayEmojiPicker] = useState(false);
   const [themeNameInput, setThemeNameInput] = useState("");
   const [showSaveThemeDialog, setShowSaveThemeDialog] = useState(false);
 
-  const homeEmojiPickerRef = useRef<HTMLDivElement>(null);
-  const awayEmojiPickerRef = useRef<HTMLDivElement>(null);
   const homeFileInputRef = useRef<HTMLInputElement>(null);
   const awayFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,63 +78,61 @@ const Admin = () => {
     updateMatchState({ customLogos: updatedLogos });
   };
 
-  // Close emoji pickers when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (homeEmojiPickerRef.current && !homeEmojiPickerRef.current.contains(event.target as Node)) {
-        setShowHomeEmojiPicker(false);
-      }
-      if (awayEmojiPickerRef.current && !awayEmojiPickerRef.current.contains(event.target as Node)) {
-        setShowAwayEmojiPicker(false);
-      }
-    };
-
-    if (showHomeEmojiPicker || showAwayEmojiPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showHomeEmojiPicker, showAwayEmojiPicker]);
-
-  const [homeGoalPlayer, setHomeGoalPlayer] = useState("");
-  const [awayGoalPlayer, setAwayGoalPlayer] = useState("");
-  const [homeCardPlayer, setHomeCardPlayer] = useState("");
-  const [awayCardPlayer, setAwayCardPlayer] = useState("");
+  const [homeGoalCount, setHomeGoalCount] = useState("");
+  const [awayGoalCount, setAwayGoalCount] = useState("");
+  const [startMinuteInput, setStartMinuteInput] = useState("");
+  const [initialStartMinute, setInitialStartMinute] = useState<number>(0);
   const [endTimeInput, setEndTimeInput] = useState(timerState.endMinutes?.toString() || "");
 
   const formatTime = (mins: number, secs: number) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const setTimerStartTime = (minutes: number) => {
+    updateTimer({ minutes, seconds: 0, isRunning: false });
+  };
+
   const handleAddHomeGoal = () => {
-    if (homeGoalPlayer.trim()) {
-      addHomeGoal(homeGoalPlayer.trim());
-      setHomeGoalPlayer("");
+    const count = homeGoalCount.trim() === "" ? 1 : parseInt(homeGoalCount);
+    if (!isNaN(count) && count > 0) {
+      for (let i = 0; i < count; i++) {
+        addHomeGoal(`Goal ${matchState.homeTeam.score + i + 1}`);
+      }
+      setHomeGoalCount("");
+    }
+  };
+
+  const handleRemoveHomeGoalBulk = () => {
+    const count = homeGoalCount.trim() === "" ? 1 : parseInt(homeGoalCount);
+    if (!isNaN(count) && count > 0 && matchState.homeTeam.goals.length > 0) {
+      const currentGoals = matchState.homeTeam.goals;
+      const removeCount = Math.min(count, currentGoals.length);
+      const newGoals = currentGoals.slice(0, currentGoals.length - removeCount);
+      updateHomeTeam({ goals: newGoals, score: newGoals.length });
+      setHomeGoalCount("");
     }
   };
 
   const handleAddAwayGoal = () => {
-    if (awayGoalPlayer.trim()) {
-      addAwayGoal(awayGoalPlayer.trim());
-      setAwayGoalPlayer("");
+    const count = awayGoalCount.trim() === "" ? 1 : parseInt(awayGoalCount);
+    if (!isNaN(count) && count > 0) {
+      for (let i = 0; i < count; i++) {
+        addAwayGoal(`Goal ${matchState.awayTeam.score + i + 1}`);
+      }
+      setAwayGoalCount("");
     }
   };
 
-  // Unified card handler
-  const handleAddCard = (team: 'home' | 'away', cardType: 'yellow' | 'red') => {
-    const player = team === 'home' ? homeCardPlayer : awayCardPlayer;
-    const setPlayer = team === 'home' ? setHomeCardPlayer : setAwayCardPlayer;
-    const addCard = team === 'home' ? addHomeCard : addAwayCard;
-    
-    if (player.trim()) {
-      addCard(player.trim(), cardType);
-      setPlayer("");
+  const handleRemoveAwayGoalBulk = () => {
+    const count = awayGoalCount.trim() === "" ? 1 : parseInt(awayGoalCount);
+    if (!isNaN(count) && count > 0 && matchState.awayTeam.goals.length > 0) {
+      const currentGoals = matchState.awayTeam.goals;
+      const removeCount = Math.min(count, currentGoals.length);
+      const newGoals = currentGoals.slice(0, currentGoals.length - removeCount);
+      updateAwayTeam({ goals: newGoals, score: newGoals.length });
+      setAwayGoalCount("");
     }
   };
-
-  const handleAddHomeYellowCard = () => handleAddCard('home', 'yellow');
-  const handleAddHomeRedCard = () => handleAddCard('home', 'red');
-  const handleAddAwayYellowCard = () => handleAddCard('away', 'yellow');
-  const handleAddAwayRedCard = () => handleAddCard('away', 'red');
 
   // Unified remove handlers
   const handleRemoveGoal = (team: 'home' | 'away', index: number) => {
@@ -150,17 +142,8 @@ const Admin = () => {
     updateTeam({ goals: newGoals, score: newGoals.length });
   };
 
-  const handleRemoveCard = (team: 'home' | 'away', index: number) => {
-    const updateTeam = team === 'home' ? updateHomeTeam : updateAwayTeam;
-    const cards = team === 'home' ? matchState.homeTeam.cards : matchState.awayTeam.cards;
-    const newCards = cards.filter((_, i) => i !== index);
-    updateTeam({ cards: newCards });
-  };
-
   const handleRemoveHomeGoal = (index: number) => handleRemoveGoal('home', index);
   const handleRemoveAwayGoal = (index: number) => handleRemoveGoal('away', index);
-  const handleRemoveHomeCard = (index: number) => handleRemoveCard('home', index);
-  const handleRemoveAwayCard = (index: number) => handleRemoveCard('away', index);
 
   // Theme save handlers
   const handleSaveTheme = () => {
@@ -221,22 +204,40 @@ const Admin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Timer End Time Setting */}
-            <div className="space-y-2 mb-4">
-              <label className="text-sm text-muted-foreground">Auto-stop Timer At (minutes)</label>
+            {/* Timer Start and End Time Settings */}
+            <div className="space-y-3 mb-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Start Timer At (minutes)</label>
+                  <Input
+                    type="number"
+                    value={startMinuteInput}
+                    onChange={(e) => setStartMinuteInput(e.target.value)}
+                    placeholder="e.g., 0 or 45"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Auto-stop Timer At (minutes)</label>
+                  <Input
+                    type="number"
+                    value={endTimeInput}
+                    onChange={(e) => setEndTimeInput(e.target.value)}
+                    placeholder="e.g., 45 or 90"
+                  />
+                </div>
+              </div>
               <div className="flex gap-2">
-                <Input
-                  type="number"
-                  value={endTimeInput}
-                  onChange={(e) => setEndTimeInput(e.target.value)}
-                  placeholder="e.g., 90 for 90 minutes"
-                  className="max-w-xs"
-                />
                 <Button 
                   onClick={() => {
-                    const minutes = parseInt(endTimeInput);
-                    if (!isNaN(minutes) && minutes > 0) {
-                      setTimerEndTime(minutes);
+                    const startMinutes = startMinuteInput.trim() === "" ? 0 : parseInt(startMinuteInput);
+                    const endMinutes = endTimeInput.trim() === "" ? null : parseInt(endTimeInput);
+                    
+                    if (!isNaN(startMinutes) && startMinutes >= 0) {
+                      setTimerStartTime(startMinutes);
+                      setInitialStartMinute(startMinutes);
+                    }
+                    if (endMinutes !== null && !isNaN(endMinutes) && endMinutes > 0) {
+                      setTimerEndTime(endMinutes);
                     }
                   }}
                   variant="outline"
@@ -246,7 +247,9 @@ const Admin = () => {
                 <Button 
                   onClick={() => {
                     setTimerEndTime(null);
+                    setStartMinuteInput("");
                     setEndTimeInput("");
+                    setInitialStartMinute(0);
                   }}
                   variant="ghost"
                 >
@@ -255,7 +258,7 @@ const Admin = () => {
               </div>
               {timerState.endMinutes !== null && (
                 <p className="text-xs text-muted-foreground">
-                  Timer will stop at {timerState.endMinutes} minutes
+                  Timer starts at {initialStartMinute} and will stop at {timerState.endMinutes} minutes
                 </p>
               )}
             </div>
@@ -355,19 +358,9 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Team Name Edit */}
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Team Name</label>
-                <Input
-                  value={matchState.homeTeam.name}
-                  onChange={(e) => updateHomeTeam({ name: e.target.value })}
-                  placeholder="Team Name"
-                />
-              </div>
-
               {/* Short Name Edit */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Short Name</label>
+                <label className="text-sm text-muted-foreground">Team Short Name</label>
                 <Input
                   value={matchState.homeTeam.shortName}
                   onChange={(e) => updateHomeTeam({ shortName: e.target.value })}
@@ -377,7 +370,7 @@ const Admin = () => {
 
               {/* Logo Edit */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Logo (emoji or image)</label>
+                <label className="text-sm text-muted-foreground">Logo</label>
                 <div className="flex gap-2 items-center">
                   <div className="w-20 h-20 flex items-center justify-center text-5xl overflow-hidden">
                     {matchState.homeTeam.logo?.startsWith('data:image') ? (
@@ -387,60 +380,6 @@ const Admin = () => {
                     )}
                   </div>
                   <div className="flex-1 space-y-2">
-                    <div className="relative">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowHomeEmojiPicker(!showHomeEmojiPicker)}
-                        className="w-full h-12 text-lg"
-                      >
-                        <Smile className="mr-2 h-5 w-5" />
-                        Choose Emoji
-                      </Button>
-                      {showHomeEmojiPicker && (
-                        <div ref={homeEmojiPickerRef} className="absolute z-50 top-full mt-2 bg-background border rounded-lg shadow-lg">
-                          {/* Custom Logos Section */}
-                          {matchState.customLogos && matchState.customLogos.length > 0 && (
-                            <div className="p-3 border-b bg-secondary/20">
-                              <div className="text-xs text-muted-foreground mb-2 font-semibold">YOUR UPLOADED LOGOS</div>
-                              <div className="grid grid-cols-6 gap-2">
-                                {matchState.customLogos.map((logoUrl, idx) => (
-                                  <div key={idx} className="relative group">
-                                    <button
-                                      onClick={() => {
-                                        updateHomeTeam({ logo: logoUrl });
-                                        setShowHomeEmojiPicker(false);
-                                      }}
-                                      className="w-12 h-12 border rounded-lg overflow-hidden bg-background hover:border-primary transition-colors"
-                                    >
-                                      <img src={logoUrl} alt={`Custom logo ${idx + 1}`} className="w-full h-full object-contain" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeCustomLogo(idx);
-                                      }}
-                                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <EmojiPicker
-                            onEmojiClick={(emojiData: EmojiClickData) => {
-                              updateHomeTeam({ logo: emojiData.emoji });
-                              setShowHomeEmojiPicker(false);
-                            }}
-                            searchPlaceHolder="Search emoji..."
-                            width={350}
-                            height={400}
-                            theme={Theme.DARK}
-                          />
-                        </div>
-                      )}
-                    </div>
                     <Button
                       variant="outline"
                       onClick={() => homeFileInputRef.current?.click()}
@@ -478,92 +417,26 @@ const Admin = () => {
 
               {/* Add Goal */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Add Goal</label>
+                <label className="text-sm text-muted-foreground">Add/Remove Goals</label>
                 <div className="flex gap-2">
                   <Input
-                    value={homeGoalPlayer}
-                    onChange={(e) => setHomeGoalPlayer(e.target.value)}
-                    placeholder="Scorer name"
+                    type="number"
+                    min="1"
+                    value={homeGoalCount}
+                    onChange={(e) => setHomeGoalCount(e.target.value)}
+                    placeholder="Number of goals (leave empty for 1)"
                     onKeyDown={(e) => e.key === "Enter" && handleAddHomeGoal()}
                   />
-                  <Button onClick={handleAddHomeGoal} size="icon">
+                  <Button onClick={handleAddHomeGoal} size="icon" title="Add goals">
                     <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={handleRemoveHomeGoalBulk} size="icon" variant="destructive" title="Remove goals">
+                    <Minus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              {/* Goals List */}
-              {matchState.homeTeam.goals.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Goals:</p>
-                  {matchState.homeTeam.goals.map((goal, i) => (
-                    <div key={i} className="text-sm flex items-center justify-between gap-2 bg-secondary/50 p-2 rounded">
-                      <div className="flex items-center gap-2">
-                        <span>⚽</span>
-                        <span>{goal.player}</span>
-                        <span className="text-muted-foreground">{goal.minute}'</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveHomeGoal(i)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
 
-              <Separator />
-
-              {/* Add Cards */}
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Add Card</label>
-                <div className="flex gap-2">
-                  <Input
-                    value={homeCardPlayer}
-                    onChange={(e) => setHomeCardPlayer(e.target.value)}
-                    placeholder="Player name"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddHomeYellowCard();
-                      }
-                    }}
-                  />
-                  <Button onClick={handleAddHomeYellowCard} className="bg-yellow-500 hover:bg-yellow-600" size="icon">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button onClick={handleAddHomeRedCard} variant="destructive" size="icon">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Cards List */}
-              {matchState.homeTeam.cards.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Cards:</p>
-                  {matchState.homeTeam.cards.map((card, i) => (
-                    <div key={i} className="text-sm flex items-center justify-between gap-2 bg-secondary/50 p-2 rounded">
-                      <div className="flex items-center gap-2">
-                        <span>{card.type === "red" ? "🟥" : "🟨"}</span>
-                        <span>{card.player}</span>
-                        <span className="text-muted-foreground">{card.minute}'</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveHomeCard(i)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -575,19 +448,9 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Team Name Edit */}
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Team Name</label>
-                <Input
-                  value={matchState.awayTeam.name}
-                  onChange={(e) => updateAwayTeam({ name: e.target.value })}
-                  placeholder="Team Name"
-                />
-              </div>
-
               {/* Short Name Edit */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Short Name</label>
+                <label className="text-sm text-muted-foreground">Team Short Name</label>
                 <Input
                   value={matchState.awayTeam.shortName}
                   onChange={(e) => updateAwayTeam({ shortName: e.target.value })}
@@ -597,7 +460,7 @@ const Admin = () => {
 
               {/* Logo Edit */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Logo (emoji or image)</label>
+                <label className="text-sm text-muted-foreground">Logo</label>
                 <div className="flex gap-2 items-center">
                   <div className="w-20 h-20 flex items-center justify-center text-5xl overflow-hidden">
                     {matchState.awayTeam.logo?.startsWith('data:image') ? (
@@ -607,60 +470,6 @@ const Admin = () => {
                     )}
                   </div>
                   <div className="flex-1 space-y-2">
-                    <div className="relative">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowAwayEmojiPicker(!showAwayEmojiPicker)}
-                        className="w-full h-12 text-lg"
-                      >
-                        <Smile className="mr-2 h-5 w-5" />
-                        Choose Emoji
-                      </Button>
-                      {showAwayEmojiPicker && (
-                        <div ref={awayEmojiPickerRef} className="absolute z-50 top-full mt-2 bg-background border rounded-lg shadow-lg">
-                          {/* Custom Logos Section */}
-                          {matchState.customLogos && matchState.customLogos.length > 0 && (
-                            <div className="p-3 border-b bg-secondary/20">
-                              <div className="text-xs text-muted-foreground mb-2 font-semibold">YOUR UPLOADED LOGOS</div>
-                              <div className="grid grid-cols-6 gap-2">
-                                {matchState.customLogos.map((logoUrl, idx) => (
-                                  <div key={idx} className="relative group">
-                                    <button
-                                      onClick={() => {
-                                        updateAwayTeam({ logo: logoUrl });
-                                        setShowAwayEmojiPicker(false);
-                                      }}
-                                      className="w-12 h-12 border rounded-lg overflow-hidden bg-background hover:border-primary transition-colors"
-                                    >
-                                      <img src={logoUrl} alt={`Custom logo ${idx + 1}`} className="w-full h-full object-contain" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeCustomLogo(idx);
-                                      }}
-                                      className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <EmojiPicker
-                            onEmojiClick={(emojiData: EmojiClickData) => {
-                              updateAwayTeam({ logo: emojiData.emoji });
-                              setShowAwayEmojiPicker(false);
-                            }}
-                            searchPlaceHolder="Search emoji..."
-                            width={350}
-                            height={400}
-                            theme={Theme.DARK}
-                          />
-                        </div>
-                      )}
-                    </div>
                     <Button
                       variant="outline"
                       onClick={() => awayFileInputRef.current?.click()}
@@ -698,92 +507,26 @@ const Admin = () => {
 
               {/* Add Goal */}
               <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Add Goal</label>
+                <label className="text-sm text-muted-foreground">Add/Remove Goals</label>
                 <div className="flex gap-2">
                   <Input
-                    value={awayGoalPlayer}
-                    onChange={(e) => setAwayGoalPlayer(e.target.value)}
-                    placeholder="Scorer name"
+                    type="number"
+                    min="1"
+                    value={awayGoalCount}
+                    onChange={(e) => setAwayGoalCount(e.target.value)}
+                    placeholder="Number of goals (leave empty for 1)"
                     onKeyDown={(e) => e.key === "Enter" && handleAddAwayGoal()}
                   />
-                  <Button onClick={handleAddAwayGoal} size="icon">
+                  <Button onClick={handleAddAwayGoal} size="icon" title="Add goals">
                     <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={handleRemoveAwayGoalBulk} size="icon" variant="destructive" title="Remove goals">
+                    <Minus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
-              {/* Goals List */}
-              {matchState.awayTeam.goals.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Goals:</p>
-                  {matchState.awayTeam.goals.map((goal, i) => (
-                    <div key={i} className="text-sm flex items-center justify-between gap-2 bg-secondary/50 p-2 rounded">
-                      <div className="flex items-center gap-2">
-                        <span>⚽</span>
-                        <span>{goal.player}</span>
-                        <span className="text-muted-foreground">{goal.minute}'</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveAwayGoal(i)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
 
-              <Separator />
-
-              {/* Add Cards */}
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Add Card</label>
-                <div className="flex gap-2">
-                  <Input
-                    value={awayCardPlayer}
-                    onChange={(e) => setAwayCardPlayer(e.target.value)}
-                    placeholder="Player name"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddAwayYellowCard();
-                      }
-                    }}
-                  />
-                  <Button onClick={handleAddAwayYellowCard} className="bg-yellow-500 hover:bg-yellow-600" size="icon">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button onClick={handleAddAwayRedCard} variant="destructive" size="icon">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Cards List */}
-              {matchState.awayTeam.cards.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Cards:</p>
-                  {matchState.awayTeam.cards.map((card, i) => (
-                    <div key={i} className="text-sm flex items-center justify-between gap-2 bg-secondary/50 p-2 rounded">
-                      <div className="flex items-center gap-2">
-                        <span>{card.type === "red" ? "🟥" : "🟨"}</span>
-                        <span>{card.player}</span>
-                        <span className="text-muted-foreground">{card.minute}'</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => handleRemoveAwayCard(i)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
