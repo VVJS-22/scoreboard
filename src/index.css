@@ -260,15 +260,14 @@
   }
 
   .added-time-notification {
-    @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+    @apply absolute top-1/2 left-1/2;
     @apply flex flex-col items-center justify-center;
     @apply bg-gradient-to-br from-amber-500/95 to-orange-600/95;
     @apply rounded-3xl px-20 py-12 shadow-2xl;
     border: 4px solid hsl(var(--accent));
     animation: added-time-pop 0.5s ease-out, added-time-fade 3s ease-in-out;
     z-index: 1000;
-    scale: 2;
-    transform: translateX(-50px);
+    transform: translate(-50%, -50%) scale(2);
   }
 
   .added-time-text {
@@ -285,15 +284,12 @@
   }
 
   @keyframes added-time-pop {
-    0% {
-      transform: translate(-50%, -50%) scale(0.5);
+    from {
+      transform: translate(-50%, -50%) scale(1);
       opacity: 0;
     }
-    50% {
-      transform: translate(-50%, -50%) scale(1.1);
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1);
+    to {
+      transform: translate(-50%, -50%) scale(2);
       opacity: 1;
     }
   }
