@@ -95,42 +95,52 @@ const Admin = () => {
   const handleAddHomeGoal = () => {
     const count = homeGoalCount.trim() === "" ? 1 : parseInt(homeGoalCount);
     if (!isNaN(count) && count > 0) {
-      for (let i = 0; i < count; i++) {
-        addHomeGoal(`Goal ${matchState.homeTeam.score + i + 1}`);
+      const currentScore = matchState.homeTeam.score;
+      const newScore = currentScore + count;
+      const newGoals = [];
+      for (let i = 0; i < newScore; i++) {
+        newGoals.push(`Goal ${i + 1}`);
       }
-      setHomeGoalCount("");
+      updateHomeTeam({ goals: newGoals, score: newScore });
     }
   };
 
   const handleRemoveHomeGoalBulk = () => {
     const count = homeGoalCount.trim() === "" ? 1 : parseInt(homeGoalCount);
-    if (!isNaN(count) && count > 0 && matchState.homeTeam.goals.length > 0) {
-      const currentGoals = matchState.homeTeam.goals;
-      const removeCount = Math.min(count, currentGoals.length);
-      const newGoals = currentGoals.slice(0, currentGoals.length - removeCount);
-      updateHomeTeam({ goals: newGoals, score: newGoals.length });
-      setHomeGoalCount("");
+    if (!isNaN(count) && count > 0 && matchState.homeTeam.score > 0) {
+      const currentScore = matchState.homeTeam.score;
+      const newScore = Math.max(0, currentScore - count);
+      const newGoals = [];
+      for (let i = 0; i < newScore; i++) {
+        newGoals.push(`Goal ${i + 1}`);
+      }
+      updateHomeTeam({ goals: newGoals, score: newScore });
     }
   };
 
   const handleAddAwayGoal = () => {
     const count = awayGoalCount.trim() === "" ? 1 : parseInt(awayGoalCount);
     if (!isNaN(count) && count > 0) {
-      for (let i = 0; i < count; i++) {
-        addAwayGoal(`Goal ${matchState.awayTeam.score + i + 1}`);
+      const currentScore = matchState.awayTeam.score;
+      const newScore = currentScore + count;
+      const newGoals = [];
+      for (let i = 0; i < newScore; i++) {
+        newGoals.push(`Goal ${i + 1}`);
       }
-      setAwayGoalCount("");
+      updateAwayTeam({ goals: newGoals, score: newScore });
     }
   };
 
   const handleRemoveAwayGoalBulk = () => {
     const count = awayGoalCount.trim() === "" ? 1 : parseInt(awayGoalCount);
-    if (!isNaN(count) && count > 0 && matchState.awayTeam.goals.length > 0) {
-      const currentGoals = matchState.awayTeam.goals;
-      const removeCount = Math.min(count, currentGoals.length);
-      const newGoals = currentGoals.slice(0, currentGoals.length - removeCount);
-      updateAwayTeam({ goals: newGoals, score: newGoals.length });
-      setAwayGoalCount("");
+    if (!isNaN(count) && count > 0 && matchState.awayTeam.score > 0) {
+      const currentScore = matchState.awayTeam.score;
+      const newScore = Math.max(0, currentScore - count);
+      const newGoals = [];
+      for (let i = 0; i < newScore; i++) {
+        newGoals.push(`Goal ${i + 1}`);
+      }
+      updateAwayTeam({ goals: newGoals, score: newScore });
     }
   };
 

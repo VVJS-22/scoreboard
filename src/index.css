@@ -267,6 +267,8 @@
     border: 4px solid hsl(var(--accent));
     animation: added-time-pop 0.5s ease-out, added-time-fade 3s ease-in-out;
     z-index: 1000;
+    scale: 2;
+    transform: translateX(-50px);
   }
 
   .added-time-text {
