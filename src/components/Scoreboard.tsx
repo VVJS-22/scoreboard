@@ -84,7 +84,17 @@ const Scoreboard = () => {
         <div className="stadium-header">
           <span 
             className="stadium-name"
-            style={{ color: theme.secondaryTextColor }}
+            style={{ 
+              color: theme.secondaryTextColor,
+              fontSize: '3em',
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%',
+              display: 'inline-block',
+              lineHeight: '1.2'
+            }}
           >
             {matchState.stadium}
           </span>
@@ -93,23 +103,16 @@ const Scoreboard = () => {
         {/* Main Timer Section */}
         <div className="timer-section">
           <div className="team-badge home-badge">
-            <div 
-              className="badge-circle home-circle"
-              style={{
-                overflow: 'hidden'
-              }}
-            >
-              {matchState.homeTeam.logo?.startsWith('data:image') ? (
-                <img 
-                  src={matchState.homeTeam.logo} 
-                  alt="Home team logo" 
-                  className="badge-icon-img"
-                  style={{ width: '80%', height: '80%', objectFit: 'contain' }}
-                />
-              ) : (
-                <span className="badge-icon">{matchState.homeTeam.logo}</span>
-              )}
-            </div>
+            {matchState.homeTeam.logo?.startsWith('data:image') ? (
+              <img 
+                src={matchState.homeTeam.logo} 
+                alt="Home team logo" 
+                className="badge-icon-img logo-size"
+                style={{ objectFit: 'contain' }}
+              />
+            ) : (
+              <span className="badge-icon">{matchState.homeTeam.logo}</span>
+            )}
           </div>
 
           <div className="timer-display">
@@ -124,12 +127,6 @@ const Scoreboard = () => {
                 <span className="added-time">{timerState.endMinutes}+{timerState.addedTime}</span>
               )}
             </span>
-            <span 
-              className="match-date"
-              style={{ color: theme.secondaryTextColor }}
-            >
-              {matchState.matchDate}
-            </span>
           </div>
 
           {/* Added Time Notification */}
@@ -141,69 +138,34 @@ const Scoreboard = () => {
           )}
 
           <div className="team-badge away-badge">
-            <div 
-              className="badge-circle away-circle"
-              style={{
-                overflow: 'hidden'
-              }}
-            >
-              {matchState.awayTeam.logo?.startsWith('data:image') ? (
-                <img 
-                  src={matchState.awayTeam.logo} 
-                  alt="Away team logo" 
-                  className="badge-icon-img"
-                  style={{ width: '80%', height: '80%', objectFit: 'contain' }}
-                />
-              ) : (
-                <span className="badge-icon">{matchState.awayTeam.logo}</span>
-              )}
-            </div>
+            {matchState.awayTeam.logo?.startsWith('data:image') ? (
+              <img 
+                src={matchState.awayTeam.logo} 
+                alt="Away team logo" 
+                className="badge-icon-img logo-size"
+                style={{ objectFit: 'contain' }}
+              />
+            ) : (
+              <span className="badge-icon">{matchState.awayTeam.logo}</span>
+            )}
           </div>
         </div>
 
         {/* Score Section */}
         <div className="score-section">
-          {/* Home Team Cards (Left side) */}
-          <div className="team-cards home-cards">
-            {matchState.homeTeam.cards.slice(-5).map((card, index) => (
-              <div 
-                key={`home-card-${card.minute}-${card.second}-${card.player}-${index}`} 
-                className="card-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className="player-name">{card.player}</span>
-                <span className={`card-icon ${card.type}`}>
-                  {card.type === "red" ? "🟥" : "🟨"}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Home Team Goals */}
-          <div className="team-events home-events">
-            {matchState.homeTeam.goals.slice(-5).map((goal, index) => (
-              <div 
-                key={`home-goal-${goal.minute}-${goal.second}-${goal.player}-${index}`} 
-                className="goal-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className="player-name">{goal.player}</span>
-                <span className="goal-minute">{goal.minute}:{goal.second?.toString().padStart(2, '0') || '00'}'</span>
-                <span className="goal-icon">⚽</span>
-              </div>
-            ))}
-          </div>
 
           {/* Score Display */}
           <div className="score-display">
             <div className="score-with-name">
               <span 
                 className="team-short-name"
-                style={{ color: theme.homeTeamColor }}
+                style={{ 
+                  color: theme.homeTeamColor,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%'
+                }}
               >
                 {matchState.homeTeam.shortName}
               </span>
@@ -223,13 +185,23 @@ const Scoreboard = () => {
               </div>
               <span 
                 className="league-text"
-                style={{ color: theme.secondaryTextColor }}
+                style={{ 
+                  color: theme.secondaryTextColor,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
               >
                 {matchState.league.split(" ")[0]}
               </span>
               <span 
                 className="league-text"
-                style={{ color: theme.secondaryTextColor }}
+                style={{ 
+                  color: theme.secondaryTextColor,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
               >
                 {matchState.league.split(" ").slice(1).join(" ")}
               </span>
@@ -237,7 +209,13 @@ const Scoreboard = () => {
             <div className="score-with-name">
               <span 
                 className="team-short-name"
-                style={{ color: theme.awayTeamColor }}
+                style={{ 
+                  color: theme.awayTeamColor,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%'
+                }}
               >
                 {matchState.awayTeam.shortName}
               </span>
@@ -249,54 +227,31 @@ const Scoreboard = () => {
               </span>
             </div>
           </div>
-
-          {/* Away Team Goals */}
-          <div className="team-events away-events">
-            {matchState.awayTeam.goals.slice(-5).map((goal, index) => (
-              <div 
-                key={`away-goal-${goal.minute}-${goal.second}-${goal.player}-${index}`} 
-                className="goal-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className="goal-icon">⚽</span>
-                <span className="goal-minute">{goal.minute}:{goal.second?.toString().padStart(2, '0') || '00'}'</span>
-                <span className="player-name">{goal.player}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Away Team Cards (Right side) */}
-          <div className="team-cards away-cards">
-            {matchState.awayTeam.cards.slice(-5).map((card, index) => (
-              <div 
-                key={`away-card-${card.minute}-${card.second}-${card.player}-${index}`} 
-                className="card-event"
-                style={{ 
-                  color: theme.goalCardTextColor 
-                }}
-              >
-                <span className={`card-icon ${card.type}`}>
-                  {card.type === "red" ? "🟥" : "🟨"}
-                </span>
-                <span className="player-name">{card.player}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Team Names */}
         <div className="teams-section">
           <span 
             className="team-name home-name"
-            style={{ color: theme.homeTeamColor }}
+            style={{ 
+              color: theme.homeTeamColor,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '45%'
+            }}
           >
             {matchState.homeTeam.name}
           </span>
           <span 
             className="team-name away-name"
-            style={{ color: theme.awayTeamColor }}
+            style={{ 
+              color: theme.awayTeamColor,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '45%'
+            }}
           >
             {matchState.awayTeam.name}
           </span>

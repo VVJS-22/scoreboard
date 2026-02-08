@@ -158,6 +158,10 @@
     pointer-events: none;
   }
 
+  .logo-size {
+    width: 13rem;
+  }
+
   .home-badge {
     margin-left: 30px;
   }
@@ -187,7 +191,8 @@
   }
 
   .match-time {
-    @apply text-9xl font-bold;
+    @apply font-bold;
+    font-size: 10rem;
     font-family: 'Oswald', sans-serif;
     color: hsl(var(--foreground));
   }
@@ -310,17 +315,21 @@
   }
 
   .score-display {
-    @apply flex items-center gap-12;
+    @apply flex items-center justify-center gap-12;
   }
 
   .score-with-name {
-    @apply flex flex-col items-center gap-2;
+    @apply flex flex-col items-center gap-2 flex-shrink-0;
+    min-width: 150px;
+    max-width: 200px;
+    width: 200px;
   }
 
   .team-short-name {
-    @apply text-2xl font-semibold tracking-wider opacity-70;
+    @apply text-2xl font-semibold tracking-wider opacity-70 text-center;
     font-family: 'Oswald', sans-serif;
     color: hsl(var(--muted-foreground));
+    width: 100%;
   }
 
   .score {
@@ -345,7 +354,7 @@
   }
 
   .league-text {
-    @apply text-lg font-bold tracking-wider uppercase leading-tight;
+    @apply text-2xl font-bold tracking-wider uppercase leading-tight;
     color: hsl(var(--muted-foreground));
     font-family: 'Oswald', sans-serif;
     text-align: center;
@@ -431,7 +440,7 @@
     }
 
     .match-time {
-      @apply text-5xl;
+      @apply text-6xl;
     }
 
     .match-date {
@@ -463,6 +472,10 @@
       font-size: 5rem;
     }
 
+    .logo-size {
+      width: 5rem;
+    }
+
     .team-short-name {
       @apply text-lg;
     }
@@ -476,7 +489,7 @@
     }
 
     .league-text {
-      @apply text-sm;
+      @apply text-lg;
     }
 
     .teams-section {
@@ -514,7 +527,7 @@
     }
 
     .match-time {
-      @apply text-4xl;
+      @apply text-5xl;
     }
 
     .score {
@@ -566,7 +579,7 @@
     }
 
     .match-time {
-      @apply text-3xl;
+      @apply text-4xl;
     }
 
     .match-date {
@@ -598,6 +611,10 @@
       font-size: 3rem;
     }
 
+    .logo-size {
+      width: 3rem;
+    }
+
     .team-short-name {
       @apply text-sm;
     }
@@ -611,7 +628,7 @@
     }
 
     .league-text {
-      @apply text-xs;
+      @apply text-base;
     }
 
     .teams-section {
